@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>單字學習 App</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #ffffff;
+      --bg-2: #f5f5f3;
+      --bg-3: #eeede8;
+      --text: #1a1a18;
+      --text-2: #6b6b66;
+      --text-3: #a0a09a;
+      --border: rgba(0,0,0,0.12);
+      --border-2: rgba(0,0,0,0.22);
+      --purple-bg: #EEEDFE;
+      --purple: #3C3489;
+      --purple-light: #7F77DD;
+      --teal-bg: #E1F5EE;
+      --teal: #085041;
+      --red-bg: #FCEBEB;
+      --red: #A32D2D;
+      --red-border: #F09595;
+      --radius: 8px;
+      --radius-lg: 12px;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #1c1c1a;
+        --bg-2: #252523;
+        --bg-3: #2e2e2b;
+        --text: #f0efe8;
+        --text-2: #a0a099;
+        --text-3: #666660;
+        --border: rgba(255,255,255,0.1);
+        --border-2: rgba(255,255,255,0.2);
+        --purple-bg: #26215C;
+        --purple: #CECBF6;
+        --purple-light: #AFA9EC;
+        --teal-bg: #04342C;
+        --teal: #9FE1CB;
+        --red-bg: #501313;
+        --red: #F09595;
+        --red-border: #A32D2D;
+      }
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+      background: var(--bg-3);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    .app-shell {
+      max-width: 640px;
+      margin: 0 auto;
+      min-height: 100vh;
+      background: var(--bg);
+      padding-bottom: 60px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 20px;
+      border-bottom: 0.5px solid var(--border);
+      background: var(--bg);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    .topbar h1 { font-size: 17px; font-weight: 600; }
+    .nav { display: flex; gap: 6px; }
+    .nav-btn {
+      padding: 5px 14px;
+      border-radius: 20px;
+      font-size: 13px;
+      cursor: pointer;
+      border: 0.5px solid var(--border-2);
+      background: transparent;
+      color: var(--text-2);
+      transition: all 0.15s;
+    }
+    .nav-btn.active { background: var(--purple); color: var(--purple-bg); border-color: var(--purple); }
+
+    .section { display: none; padding: 20px; }
+    .section.active { display: block; }
+
+    .info-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--teal-bg);
+      color: var(--teal);
+      font-size: 12px;
+      padding: 4px 12px;
+      border-radius: 20px;
+      margin-bottom: 14px;
+      font-weight: 500;
+    }
+
+    .input-row { display: flex; gap: 8px; margin-bottom: 10px; }
+    .input-row input {
+      flex: 1;
+      padding: 9px 14px;
+      border: 0.5px solid var(--border-2);
+      border-radius: var(--radius);
+      font-size: 15px;
+      background: var(--bg);
+      color: var(--text);
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .input-row input:focus { border-color: var(--purple-light); }
+
+    .btn {
+      padding: 9px 16px;
+      border-radius: var(--radius);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      border: 0.5px solid var(--border-2);
+      background: transparent;
+      color: var(--text);
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+    .btn:hover { background: var(--bg-2); }
+    .btn:active { transform: scale(0.97); }
+    .btn.primary { background: var(--purple); color: var(--purple-bg); border-color: var(--purple); }
+    .btn.primary:hover { opacity: 0.88; }
+    .btn.danger { color: var(--red); border-color: var(--red-border); }
+    .btn.danger:hover { background: var(--red-bg); }
+    .btn.sm { padding: 5px 12px; font-size: 12px; }
+
+    .status { font-size: 13px; margin-bottom: 10px; min-height: 20px; color: var(--text-2); }
+    .status.loading { color: var(--purple-light); }
+    .status.error { color: var(--red); }
+    .status.success { color: var(--teal); }
+
+    .word-card {
+      background: var(--bg);
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 14px 16px;
+      margin-bottom: 10px;
+      transition: border-color 0.15s;
+    }
+    .word-card:hover { border-color: var(--border-2); }
+    .word-card-top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .word-en { font-size: 17px; font-weight: 600; flex: 1; }
+    .word-phonetic { font-size: 13px; color: var(--text-3); font-family: Georgia, serif; }
+    .word-pos {
+      font-size: 11px;
+      background: var(--purple-bg);
+      color: var(--purple);
+      padding: 2px 9px;
+      border-radius: 20px;
+      font-weight: 500;
+    }
+    .word-zh { font-size: 14px; color: var(--text); margin-top: 6px; font-weight: 500; }
+    .word-en-def { font-size: 13px; color: var(--text-2); margin-top: 3px; }
+    .word-example { font-size: 13px; color: var(--text-3); margin-top: 4px; font-style: italic; }
+    .word-actions {
+      display: flex;
+      gap: 6px;
+      margin-top: 12px;
+      border-top: 0.5px solid var(--border);
+      padding-top: 10px;
+    }
+
+    .flash-meta { display: flex; gap: 10px; margin-bottom: 14px; }
+    .metric {
+      background: var(--bg-2);
+      border-radius: var(--radius);
+      padding: 10px 14px;
+      flex: 1;
+      text-align: center;
+    }
+    .metric-val { font-size: 22px; font-weight: 600; }
+    .metric-lbl { font-size: 12px; color: var(--text-2); margin-top: 2px; }
+
+    .flash-card {
+      background: var(--bg);
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 36px 24px;
+      text-align: center;
+      min-height: 210px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      margin-bottom: 16px;
+      transition: border-color 0.15s;
+    }
+    .flash-card:hover { border-color: var(--border-2); }
+    .flash-word { font-size: 30px; font-weight: 600; margin-bottom: 6px; }
+    .flash-phonetic { font-size: 15px; color: var(--text-3); font-family: Georgia, serif; margin-bottom: 6px; }
+    .flash-hint { font-size: 13px; color: var(--text-3); }
+    .flash-divider { width: 100%; height: 0.5px; background: var(--border); margin: 14px 0; }
+    .flash-zh { font-size: 17px; font-weight: 500; color: var(--text); }
+    .flash-en-def { font-size: 13px; color: var(--text-2); margin-top: 4px; }
+    .flash-ex { font-size: 13px; color: var(--text-3); font-style: italic; margin-top: 6px; }
+    .flash-controls { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+
+    .setting-block {
+      background: var(--bg-2);
+      border-radius: var(--radius-lg);
+      padding: 16px;
+      margin-bottom: 14px;
+    }
+    .setting-label {
+      font-size: 11px;
+      color: var(--text-2);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 8px;
+    }
+    .setting-desc { font-size: 13px; color: var(--text-2); margin-bottom: 10px; line-height: 1.7; }
+    .setting-block select {
+      width: 100%;
+      padding: 9px 12px;
+      border: 0.5px solid var(--border-2);
+      border-radius: var(--radius);
+      font-size: 14px;
+      background: var(--bg);
+      color: var(--text);
+      outline: none;
+      margin-bottom: 8px;
+    }
+
+    .empty {
+      text-align: center;
+      padding: 48px 20px;
+      color: var(--text-3);
+      font-size: 14px;
+      line-height: 2.4;
+    }
+
+    @media (max-width: 480px) {
+      .nav-btn { padding: 5px 10px; font-size: 12px; }
+      .flash-word { font-size: 24px; }
+    }
+  </style>
+</head>
+<body>
+<div class="app-shell">
+
+  <div class="topbar">
+    <h1>📖 單字學習</h1>
+    <div class="nav">
+      <button class="nav-btn active" onclick="showSection('list', this)">單字庫</button>
+      <button class="nav-btn" onclick="showSection('flash', this)">閃卡</button>
+      <button class="nav-btn" onclick="showSection('settings', this)">設定</button>
+    </div>
+  </div>
+
+  <!-- 單字庫 -->
+  <div class="section active" id="sec-list">
+    <div class="info-badge">✓ 完全免費，不需要任何 API Key</div>
+    <div class="input-row">
+      <input type="text" id="word-input"
+             placeholder="輸入英文單字，按 Enter 新增"
+             onkeydown="if(event.key==='Enter') addWord()"
+             autocomplete="off" autocorrect="off" spellcheck="false" />
+      <button class="btn primary" onclick="addWord()">新增</button>
+    </div>
+    <div id="status-msg" class="status"></div>
+    <div id="word-list"></div>
+  </div>
+
+  <!-- 閃卡 -->
+  <div class="section" id="sec-flash">
+    <div id="flash-content"></div>
+  </div>
+
+  <!-- 設定 -->
+  <div class="section" id="sec-settings">
+    <div class="setting-block">
+      <div class="setting-label">語音設定</div>
+      <div class="setting-desc">選擇英語語音（瀏覽器內建，完全免費）</div>
+      <select id="voice-select"></select>
+      <button class="btn sm" onclick="testVoice()">試聽</button>
+    </div>
+    <div class="setting-block">
+      <div class="setting-label">資料來源說明</div>
+      <div class="setting-desc">
+        釋義來源：Free Dictionary API（免費無限制）<br>
+        中文翻譯：MyMemory Translation API（免費無限制）<br>
+        語音朗讀：Web Speech API（瀏覽器內建）<br>
+        資料儲存：瀏覽器本機（不需後端）
+      </div>
+    </div>
+    <div class="setting-block">
+      <div class="setting-label">管理資料</div>
+      <button class="btn sm" onclick="loadDemo()">載入 5 個示範單字</button>
+      <button class="btn sm danger" onclick="clearAll()" style="margin-left:6px;">清除所有單字</button>
+    </div>
+  </div>
+
+</div>
+<script>
+  let words = [];
+  let flashIdx = 0;
+  let flashRevealed = false;
+
+  function loadWords() {
+    try { words = JSON.parse(localStorage.getItem('vocab_words_v2') || '[]'); } catch(e) { words = []; }
+  }
+  function saveWords() { localStorage.setItem('vocab_words_v2', JSON.stringify(words)); }
+  loadWords();
+
+  function showSection(name, btn) {
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('sec-' + name).classList.add('active');
+    if (btn) btn.classList.add('active');
+    if (name === 'flash') renderFlash();
+    if (name === 'list') renderList();
+  }
+
+  function setStatus(msg, type) {
+    const el = document.getElementById('status-msg');
+    el.textContent = msg;
+    el.className = 'status ' + (type || '');
+  }
+
+  function esc(str) {
+    return String(str || '')
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  async function addWord() {
+    const input = document.getElementById('word-input');
+    const word = input.value.trim().toLowerCase();
+    if (!word) return;
+    if (words.find(w => w.en.toLowerCase() === word)) {
+      setStatus('「' + word + '」已在清單中', 'error'); return;
+    }
+    input.value = '';
+    setStatus('查詢「' + word + '」中...', 'loading');
+    try {
+      const info = await fetchWordInfo(word);
+      words.unshift(info);
+      saveWords(); renderList();
+      setStatus('已成功新增「' + word + '」', 'success');
+      setTimeout(() => setStatus(''), 3000);
+    } catch(e) {
+      setStatus('找不到「' + word + '」，請確認拼字是否正確', 'error');
+    }
+  }
+
+  async function fetchWordInfo(word) {
+    const res = await fetch('https://api.dictionaryapi.dev/api/v2/entries/en/' + encodeURIComponent(word));
+    if (!res.ok) throw new Error('not found');
+    const data = await res.json();
+    const entry = data[0];
+    const phonetic = entry.phonetic || (entry.phonetics || []).find(p => p.text)?.text || '';
+    const meaning = (entry.meanings || [])[0] || {};
+    const pos = meaning.partOfSpeech || '';
+    const defObj = (meaning.definitions || [])[0] || {};
+    const enDef = defObj.definition || '';
+    const example = defObj.example || '';
+
+    let zh = '';
+    try {
+      const tRes = await fetch('https://api.mymemory.translated.net/get?q=' + encodeURIComponent(enDef) + '&langpair=en|zh-TW');
+      const tData = await tRes.json();
+      const candidate = tData.responseData?.translatedText || '';
+      if (candidate && candidate.toLowerCase() !== enDef.toLowerCase()) zh = candidate;
+    } catch(e) {}
+
+    return { en: entry.word || word, phonetic, pos, enDef, zh, example };
+  }
+
+  function renderList() {
+    const el = document.getElementById('word-list');
+    if (!words.length) {
+      el.innerHTML = `<div class="empty">還沒有單字 📝<br>在上方輸入英文單字開始新增吧！<br><button class="btn sm" style="margin-top:8px;" onclick="loadDemo()">先載入示範單字試試</button></div>`;
+      return;
+    }
+    el.innerHTML = words.map((w, i) => `
+      <div class="word-card">
+        <div class="word-card-top">
+          <span class="word-en">${esc(w.en)}</span>
+          ${w.phonetic ? `<span class="word-phonetic">${esc(w.phonetic)}</span>` : ''}
+          ${w.pos ? `<span class="word-pos">${esc(w.pos)}</span>` : ''}
+        </div>
+        ${w.zh ? `<div class="word-zh">${esc(w.zh)}</div>` : ''}
+        ${w.enDef ? `<div class="word-en-def">${esc(w.enDef)}</div>` : ''}
+        ${w.example ? `<div class="word-example">"${esc(w.example)}"</div>` : ''}
+        <div class="word-actions">
+          <button class="btn sm" onclick="speak(${i})">🔊 朗讀</button>
+          <button class="btn sm danger" onclick="deleteWord(${i})" style="margin-left:auto;">刪除</button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function deleteWord(i) {
+    if (!confirm('確定要刪除「' + words[i].en + '」？')) return;
+    words.splice(i, 1); saveWords(); renderList();
+  }
+
+  function speak(idx) {
+    const word = typeof idx === 'number' ? words[idx].en : idx;
+    window.speechSynthesis.cancel();
+    const utt = new SpeechSynthesisUtterance(word);
+    utt.lang = 'en-US';
+    utt.rate = 0.82;
+    const sel = document.getElementById('voice-select');
+    if (sel && sel.value) {
+      const v = speechSynthesis.getVoices().find(v => v.name === sel.value);
+      if (v) utt.voice = v;
+    }
+    speechSynthesis.speak(utt);
+  }
+
+  function renderFlash() {
+    const el = document.getElementById('flash-content');
+    if (!words.length) {
+      el.innerHTML = '<div class="empty">先到「單字庫」新增單字再來練習吧！</div>'; return;
+    }
+    if (flashIdx >= words.length) flashIdx = 0;
+    flashRevealed = false;
+    const w = words[flashIdx];
+    el.innerHTML = `
+      <div class="flash-meta">
+        <div class="metric"><div class="metric-val">${words.length}</div><div class="metric-lbl">總單字數</div></div>
+        <div class="metric"><div class="metric-val">${flashIdx + 1}</div><div class="metric-lbl">目前第幾張</div></div>
+      </div>
+      <div class="flash-card" onclick="revealFlash()">
+        <div class="flash-word">${esc(w.en)}</div>
+        ${w.phonetic ? `<div class="flash-phonetic">${esc(w.phonetic)}</div>` : ''}
+        <div class="flash-hint" id="flash-hint">點擊查看意思</div>
+        <div id="flash-ans" style="display:none;width:100%;text-align:center;">
+          <div class="flash-divider"></div>
+          ${w.zh ? `<div class="flash-zh">${esc(w.zh)}</div>` : ''}
+          ${w.enDef ? `<div class="flash-en-def">${esc(w.enDef)}</div>` : ''}
+          ${w.example ? `<div class="flash-ex">"${esc(w.example)}"</div>` : ''}
+        </div>
+      </div>
+      <div class="flash-controls">
+        <button class="btn" onclick="prevFlash()">← 上一張</button>
+        <button class="btn" onclick="speak(flashIdx)">🔊 朗讀</button>
+        <button class="btn primary" onclick="nextFlash()">下一張 →</button>
+      </div>
+      <div style="text-align:center;margin-top:14px;">
+        <button class="btn sm" onclick="shuffleFlash()">🔀 隨機排序</button>
+      </div>
+    `;
+  }
+
+  function revealFlash() {
+    if (flashRevealed) return;
+    flashRevealed = true;
+    document.getElementById('flash-ans').style.display = 'block';
+    document.getElementById('flash-hint').style.display = 'none';
+  }
+
+  function nextFlash() { flashIdx = (flashIdx + 1) % words.length; renderFlash(); }
+  function prevFlash() { flashIdx = (flashIdx - 1 + words.length) % words.length; renderFlash(); }
+  function shuffleFlash() {
+    for (let i = words.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [words[i], words[j]] = [words[j], words[i]];
+    }
+    saveWords(); flashIdx = 0; renderFlash();
+  }
+
+  function loadVoices() {
+    const en = speechSynthesis.getVoices().filter(v => v.lang.startsWith('en'));
+    const sel = document.getElementById('voice-select');
+    if (!sel || !en.length) return;
+    const saved = localStorage.getItem('vocab_voice');
+    sel.innerHTML = en.map(v =>
+      `<option value="${esc(v.name)}" ${v.name === saved ? 'selected' : ''}>${esc(v.name)} (${v.lang})</option>`
+    ).join('');
+    sel.onchange = () => localStorage.setItem('vocab_voice', sel.value);
+  }
+  speechSynthesis.onvoiceschanged = loadVoices;
+  loadVoices();
+
+  function testVoice() { speak('Hello, welcome to the vocabulary learning app.'); }
+
+  function loadDemo() {
+    const demo = [
+      { en: 'ephemeral', phonetic: '/ɪˈfɛm.ər.əl/', pos: 'adjective', enDef: 'Lasting for a very short time.', zh: '短暫的、轉瞬即逝的', example: 'Fame can be ephemeral.' },
+      { en: 'eloquent', phonetic: '/ˈɛl.ə.kwənt/', pos: 'adjective', enDef: 'Fluent or persuasive in speaking or writing.', zh: '口才流利的、雄辯的', example: 'She gave an eloquent speech.' },
+      { en: 'resilient', phonetic: '/rɪˈzɪl.i.ənt/', pos: 'adjective', enDef: 'Able to recover quickly from difficulties.', zh: '有韌性的、有恢復力的', example: 'Children are often resilient.' },
+      { en: 'ambiguous', phonetic: '/æmˈbɪɡ.ju.əs/', pos: 'adjective', enDef: 'Open to more than one interpretation.', zh: '模糊的、含糊不清的', example: 'The instructions were ambiguous.' },
+      { en: 'meticulous', phonetic: '/mɪˈtɪk.jʊ.ləs/', pos: 'adjective', enDef: 'Showing great attention to detail.', zh: '一絲不苟的、極細心的', example: 'He is meticulous about details.' }
+    ];
+    demo.forEach(w => { if (!words.find(x => x.en === w.en)) words.push(w); });
+    saveWords(); renderList();
+    setStatus('已載入 5 個示範單字', 'success');
+    setTimeout(() => setStatus(''), 3000);
+  }
+
+  function clearAll() {
+    if (!confirm('確定要清除所有單字？')) return;
+    words = []; saveWords(); renderList();
+  }
+
+  renderList();
+</script>
+</body>
+</html>
